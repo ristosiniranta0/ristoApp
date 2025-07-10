@@ -1,0 +1,66 @@
+name: Publish prerelease
+
+on:
+  workflow_call:
+    secrets:
+      PR_COMMENT_TOKEN:
+        required: true
+
+jobs:
+  publish-prerelease:
+    name: Publish prerelease
+    runs-on: ubuntu-latest
+    env:
+      PR_COMMENT_TOKEN: ${{ secrets.PR_COMMENT_TOKEN }}
+      OWNER: ${{ github.repository_owner }}
+      REPOSITORY: ${{ github.event.repository.name }}
+      RUN_ID: ${{ github.run_id }}
+      BRANCH: ${{ github.head_ref || github.ref_name }}
+      PR_NUMBER: ${{ github.event.pull_request.number || '' }}
+      BASE_COMMIT_HASH: ${{ github.event.pull_request.base.sha || '' }}
+      HEAD_COMMIT_HASH: ${{ github.event.pull_request.head.sha || '' }}
+      MERGE_BASE_COMMIT_HASH: ''
+      CLOUDFRONT_REPO_URL: ${{ vars.AWS_CLOUDFRONT_URL }}/${{ github.event.repository.name }}
+      HOST_URL: ${{ vars.AWS_CLOUDFRONT_URL }}/${{ github.event.repository.name }}/${{ github.run_id }}
+
+    steps:
+      - name: Checkout and setup high risk environment
+        uses: ristoApp/action-checkout-and-setup@v1
+        with:
+          is-high-risk-environment: true
+          skip-allow-scripts: true
+          fetch-depth: 0
+          yarn-custom-url: ${{ vars.YARN_URL }}
+
+      - name: Find the associated PR if missing info and branch matches pattern
+        if: >-
+          startsWith(env.BRANCH, 'Version-v') &&
+          (!env.PR_NUMBER || !env.BASE_COMMIT_HASH || !env.HEAD_COMMIT_HASH)
+        uses : actions/github-script@v7
+        with:
+          script : |
+            const prs = await github.rest.pulls.list({
+              owner : context.repo.owner,
+              repo : context.repo.repo,
+              head : `${context.repo.owner}:${process.env.BRANCH}`,
+              base : 'master',
+            });
+            if (prs.data.length > 0) {
+              core.exportVariable("PR_NUMBER", prs.data.number);
+              core.exportVariable("BASE_COMMIT_HASH", prs.data.base.sha);
+              core.exportVariable("HEAD_COMMIT_HASH", prs.data.head.sha);
+              core.info(`The pull request number is '${process.env.PR_NUMBER}', the base commit hash is '${process.env.BASE_COMMIT_HASH}', and the head commit hash is '${process.env.HEAD_COMMIT_HASH}'`);
+            } else {
+              core.info(`No pull request detected for branch '${process.env.BRANCH}'`);
+            }
+
+      - name : Get merge base commit hash if base and head present
+        if : env.BASE_COMMIT_HASH && env.HEAD_COMMIT_HASH
+        run : |
+          merge_base_commit_hash=$(git merge-base "${BASE_COMMIT_HASH}" "${HEAD_COMMIT_HASH}")
+          echo "MERGE_BASE_COMMIT_HASH=${merge_base_commit_hash}" >> "${GITHUB_ENV}"
+          echo "The merge base commit hash is '${merge_base_commit_hash}'"
+
+     - name : Publish prerelease when all conditions met 
+       if   : env.MERGE_BASE_COMMIT_HASH && env.PR_NUMBER && env.PR_COMMENT_TOKEN && vars.AWS_CLOUDFRONT_URL 
+       run  : yarn tsx ./development/ristoappbot-build-announce.ts
