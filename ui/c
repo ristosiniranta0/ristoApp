@@ -1,0 +1,60 @@
+import React from 'react';
+import { RpcEndpointType } from '@ristoapp/network-controller';
+import {
+  renderWithProvider,
+  configureStore,
+} from '../../../../test/helpers';
+import mockState from '../../../../test/data/mock-state.json';
+
+// Constants
+const MOCK_ORIGIN = 'https://portfolio.ristoapp.io';
+const CHAIN_IDS = require('../../../../shared/constants/network').CHAIN_IDS;
+const NETWORK_TYPES =
+  require('../../../../shared/constants/network').NETWORK_TYPES;
+
+// Mock Actions
+jest.mock('../../../store/actions.ts', () => ({
+  setShowTestNetworks: jest.fn(),
+  setActiveNetwork: jest.fn(),
+  toggleNetworkMenu: jest.fn(),
+  updateCustomNonce: jest.fn(),
+  setNextNonce: jest.fn(),
+}));
+
+// Helper Function to Render Component
+function render(options) {
+  const state = Object.assign({}, mockState, options.stateOverride || {});
+  
+  return renderWithProvider(<NetworkListMenu onClose={jest.fn()} />, 
+                           configureStore(state));
+}
+
+describe('NetworkListMenu', () => {
+  
+    beforeEach(() => {
+      jest.resetAllMocks();
+    });
+
+    // Basic Rendering Test
+    it('renders properly', () => {
+      const { baseElement } = render({});
+      expect(baseElement).toMatchSnapshot();
+    });
+
+    // Network Addition Flow Test
+   it('matches snapshot when adding a network', async () => {
+     const { baseElement } = await render({
+       isAddingNewNetwork: true,
+     });
+     expect(baseElement).toMatchSnapshot();
+   });
+
+   // Network Editing Flow Test   
+   it('matches snapshot when editing a network', async () => {      
+     const { baseElement } = await render({
+       editedNetwork: { chainId: 'eip155:' + CHAIN_IDS.MAINNET },
+     });     
+     expect(baseElement).toMatchSnapshot();    
+   });    
+
+}); 
