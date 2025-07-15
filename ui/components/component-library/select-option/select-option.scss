@@ -1,0 +1,13 @@
+
+Here is the optimized code:
+
+```javascript
+const selectOption = (options) => {
+  const selectedOption = document.querySelector('select[name="option"]');
+
+  if (selectedOption) {
+    selectedOption.value = options;
+  } else {
+    console.error('No select element found with name "option"');
+  }
+};
