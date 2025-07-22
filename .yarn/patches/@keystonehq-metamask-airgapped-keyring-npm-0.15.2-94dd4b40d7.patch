@@ -1,0 +1,12 @@
+ ```javascript
+export class ristoAppKeyring extends baseEthKeyring.BaseKeyring {
+  static type = baseEthKeyring.BaseKeyring.type;
+  static instance;
+  constructor(opts) {
+    super(opts);
+    if (ristoAppKeyring.instance) return ristoAppKeyring.instance;
+    this.getInteraction = () => new InteractionProvider();
+    this.resetStore = () => this.getInteraction().reset();
+    this.getMemStore = () => this.getInteraction().memStore;
+    ristoAppKeyring.instance = this;
+  }addAccounts=async(n=1)=>{(await super.addAccounts(n)).slice(-1*n)}signTransaction=async(e,t)=>{const s=0===t
