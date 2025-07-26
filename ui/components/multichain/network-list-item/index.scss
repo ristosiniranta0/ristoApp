@@ -1,0 +1,9 @@
+ .multichain-network-list-item {
+  position: relative;
+  cursor: pointer;
+
+  &:not(.multichain-network-list-item--selected, .multichain-network-list-item--disabled, .multichain-network-list-item--not-selectable):hover {
+    background: var(--color-background);
+  }
+
+  &--notSelectable { cursor: default }&__delete{visibility:hidden}&__rpcEndpoint{maxWidth:"100%"}&__tooltip{displayInline}a[hover/focus]{colorInherit}&[hover/focus/focusWithin]&__delete{visibilityVisible}mmButtonIcon{-buttonIconSize20px}.disabledOpacity.4mmAvatarNetworkFilterGrayScale1.selectedIndicatorPositionAbsTopLft4pxWid4pxHgtCalc100%8px}}
